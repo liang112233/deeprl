@@ -44,23 +44,30 @@ def get_traj(agent, env, episode_max_length, render=False):
     info = []
 
     ob = env.observe()
+    #print("ob",ob)
 
     for _ in xrange(episode_max_length):
+        print("ob sum1",np.sum(ob))
         act_prob = agent.get_one_act_prob(ob)
+        #print("act_prob shape",act_prob.shape)
         csprob_n = np.cumsum(act_prob)
         a = (csprob_n > np.random.rand()).argmax()
+        print("action from trj data type",type(a))
 
         obs.append(ob)  # store the ob at current decision making step
         acts.append(a)
 
         ob, rew, done, info = env.step(a, repeat=True)
-
         rews.append(rew)
+        print("ob sum2", np.sum(ob))
+
+        #print("act_prob",act_prob)
+        #print("get_entropy(act_prob)",get_entropy(act_prob))
         entropy.append(get_entropy(act_prob))
 
         if done: break
         if render: env.render()
-
+    #print("rews[-1]",rews[-1])
     return {'reward': np.array(rews),
             'ob': np.array(obs),
             'action': np.array(acts),
@@ -83,6 +90,7 @@ def concatenate_all_ob(trajs, pa):
     for i in xrange(len(trajs)):
         for j in xrange(len(trajs[i]['reward'])):
             all_ob[timesteps, 0, :, :] = trajs[i]['ob'][j]
+            #print ("all_ob[timesteps, 0, :, :] ", trajs[i]['ob'][j])
             timesteps += 1
 
     return all_ob
@@ -151,6 +159,7 @@ def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_
     for k in ref_discount_rews:
         ax.plot(np.tile(np.average(np.concatenate(ref_slow_down[k])), len(slow_down_lr_curve)), linewidth=2, label=k)
 
+
     plt.legend(loc=1)
     plt.xlabel("Iteration", fontsize=20)
     plt.ylabel("Slowdown", fontsize=20)
@@ -161,13 +170,14 @@ def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
     env = environment.Env(pa, render=render, repre=repre, end=end)
+    #print "env",env.get_reward()
 
     pg_learner = pg_network.PGLearner(pa)
 
-    if pg_resume is not None:
-        net_handle = open(pg_resume, 'rb')
-        net_params = cPickle.load(net_handle)
-        pg_learner.set_net_params(net_params)
+    # if pg_resume is not None:
+    #     net_handle = open(pg_resume, 'rb')
+    #     net_params = cPickle.load(net_handle)
+    #     pg_learner.set_net_params(net_params)
 
     # ----------------------------
     print("Preparing for data...")
@@ -199,23 +209,28 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
             for i in xrange(pa.num_seq_per_batch):
                 traj = get_traj(pg_learner, env, pa.episode_max_length)
+                #print("traj",traj)
                 trajs.append(traj)
 
             # roll to next example
-            env.seq_no = (env.seq_no + 1) % env.pa.num_ex
+            #env.seq_no = (env.seq_no + 1) % env.pa.num_ex
 
             all_ob.append(concatenate_all_ob(trajs, pa))
 
             # Compute discounted sums of rewards
+            #print "rt",traj
             rets = [discount(traj["reward"], pa.discount) for traj in trajs]
+            # for traj in trajs:
+            #print("traj[ob]",traj["ob"])
             maxlen = max(len(ret) for ret in rets)
             padded_rets = [np.concatenate([ret, np.zeros(maxlen - len(ret))]) for ret in rets]
-
+            #print ("padded_rets")
             # Compute time-dependent baseline
             baseline = np.mean(padded_rets, axis=0)
-
+            #print ("baseline",baseline)
             # Compute advantage function
             advs = [ret - baseline[:len(ret)] for ret in rets]
+            #print("advs",advs)
             all_action.append(np.concatenate([traj["action"] for traj in trajs]))
             all_adv.append(np.concatenate(advs))
 
@@ -235,14 +250,18 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         all_ob = concatenate_all_ob_across_examples(all_ob, pa)
         all_action = np.concatenate(all_action)
         all_adv = np.concatenate(all_adv)
+        # print("all_action",all_action)
+        # print("all_ob",all_ob)
+        # print("all_adv",all_adv)
+
+
 
         # Do policy gradient update step
         loss = pg_learner.train(all_ob, all_action, all_adv)
+        print("loss",loss)
         eprews = np.concatenate(all_eprews)  # episode total rewards
         eplens = np.concatenate(all_eplens)  # episode lengths
-
         all_slowdown = np.concatenate(all_slowdown)
-
         all_entropy = np.concatenate(all_entropy)
 
         timer_end = time.time()
@@ -259,6 +278,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         print "MeanEntropy \t %s" % (np.mean(all_entropy))
         print "Elapsed time\t %s" % (timer_end - timer_start), "seconds"
         print "-----------------"
+        print("max_rew_lr_curve", max_rew_lr_curve)
+        print("slow_down_lr_curve", slow_down_lr_curve)
 
         timer_start = time.time()
 
@@ -272,11 +293,13 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
             param_file.close()
 
             slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
-                                 render=False, plot=True, repre=repre, end=end)
+                                  render=False, plot=True, repre=repre, end=end)
 
             plot_lr_curve(pa.output_filename,
                           max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
                           ref_discount_rews, ref_slow_down)
+
+
 
 
 def main():
@@ -285,17 +308,17 @@ def main():
 
     pa = parameters.Parameters()
 
-    pa.simu_len = 200  # 1000
-    pa.num_ex = 10  # 100
-    pa.num_nw = 10
-    pa.num_seq_per_batch = 20
+    pa.simu_len = 1000  # 1000
+    pa.num_ex = 1  # 100
+    pa.num_nw = 5 # this number decides the length of queue
+    pa.num_seq_per_batch = 10  ## number of sequences to compute baseline
     pa.output_freq = 50
 
     # pa.max_nw_size = 5
     # pa.job_len = 5
-    pa.new_job_rate = 0.3
+    pa.new_job_rate = 0.7
 
-    pa.episode_max_length = 2000  # 2000
+    pa.episode_max_length = 100  # 2000
 
     pa.compute_dependent_parameters()
 

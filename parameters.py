@@ -9,32 +9,32 @@ class Parameters:
 
         self.output_filename = 'data/tmp'
 
-        self.num_epochs = 10000         # number of training epochs
-        self.simu_len = 10             # length of the busy cycle that repeats itself
+        self.num_epochs = 1000         # number of training epochs #10000
+        self.simu_len = 100           # length of the busy cycle that repeats itself   ?
         self.num_ex = 1                # number of sequences
 
-        self.output_freq = 10          # interval for output and store parameters
+        self.output_freq = 50          # interval for output and store parameters
 
-        self.num_seq_per_batch = 10    # number of sequences to compute baseline
-        self.episode_max_length = 200  # enforcing an artificial terminal
+        self.num_seq_per_batch = 1000    # number of sequences to compute baseline, we have TD error, no need for baseline,
+        self.episode_max_length = 500  # enforcing an artificial terminal
 
-        self.num_res = 2               # number of resources in the system
-        self.num_nw = 5                # maximum allowed number of work in the queue
+        self.num_res = 2               # kinds of resources in the system
+        self.num_nw = 5                # maximum allowed number of work in the queue, this number could be redefined in pg_re...
 
-        self.time_horizon = 20         # number of time steps in the graph
+        self.time_horizon = 30        # number of time steps in the graph
         self.max_job_len = 15          # maximum duration of new jobs
-        self.res_slot = 10             # maximum number of available resource slots
+        self.res_slot = 20             # maximum number of available resource slots   This is the total maximum resource in the system, e.g CPU=res_slot , Mem =res_slot
         self.max_job_size = 10         # maximum resource request of new work
 
-        self.backlog_size = 60         # backlog queue size
+        self.backlog_size = 30         # backlog queue size
 
         self.max_track_since_new = 10  # track how many time steps since last new jobs
 
         self.job_num_cap = 40          # maximum number of distinct colors in current work graph
 
-        self.new_job_rate = 0.7        # lambda in new job arrival Poisson Process
+        self.new_job_rate = 0.9        # lambda in new job arrival Poisson Process
 
-        self.discount = 1           # discount factor
+        self.discount = 1          # discount factor
 
         # distribution for new job arrival
         self.dist = job_distribution.Dist(self.num_res, self.max_job_size, self.max_job_len)
@@ -69,7 +69,7 @@ class Parameters:
         # supervised learning mimic policy
         self.batch_size = 10
         self.evaluate_policy_name = "SJF"
-
+    #
     def compute_dependent_parameters(self):
         assert self.backlog_size % self.time_horizon == 0  # such that it can be converted into an image
         self.backlog_width = self.backlog_size / self.time_horizon

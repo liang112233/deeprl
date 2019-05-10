@@ -193,15 +193,21 @@ def get_traj_worker(pg_learner, env, pa, result):
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
     maxlen = max(len(ret) for ret in rets)
+
     padded_rets = [np.concatenate([ret, np.zeros(maxlen - len(ret))]) for ret in rets]
+    #print "padded_rets",padded_rets
+    #print "rets",rets
 
     # Compute time-dependent baseline
-    baseline = np.mean(padded_rets, axis=0)
+    baseline = np.mean(padded_rets, axis=0)  ## baseline is the average reward ?
 
     # Compute advantage function
     advs = [ret - baseline[:len(ret)] for ret in rets]
+    #print "advantage function", advs
     all_action = np.concatenate([traj["action"] for traj in trajs])
-    all_adv = np.concatenate(advs)
+    all_adv = np.concatenate(advs)# direct put them together
+    # print"advs", advs
+    # print "all_adv",all_adv
 
     all_eprews = np.array([discount(traj["reward"], pa.discount)[0] for traj in trajs])  # episode total rewards
     all_eplens = np.array([len(traj["reward"]) for traj in trajs])  # episode lengths
@@ -225,28 +231,33 @@ def get_traj_worker(pg_learner, env, pa, result):
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
     # ----------------------------
-    print("Preparing for workers...")
+    print "Preparing for workers..."
     # ----------------------------
 
     pg_learners = []
     envs = []
+    #print "pa",pa
 
     nw_len_seqs, nw_size_seqs = job_distribution.generate_sequence_work(pa, seed=42)
 
+
     for ex in xrange(pa.num_ex):
+        #print "pa.num_ex", pa.num_ex
 
-        print "-prepare for env-", ex
-
+        #print "-prepare for env-", ex
+        #print "nw_len_seqs",nw_len_seqs
+        #print "nw_size_seqs",nw_size_seqs
         env = environment.Env(pa, nw_len_seqs=nw_len_seqs, nw_size_seqs=nw_size_seqs,
-                              render=False, repre=repre, end=end)
+                                  render=False, repre=repre, end=end)
         env.seq_no = ex
         envs.append(env)
 
     for ex in xrange(pa.batch_size + 1):  # last worker for updating the parameters
 
-        print "-prepare for worker-", ex
+        #print "-prepare for worker-", ex
 
         pg_learner = pg_network.PGLearner(pa)
+        print"pg_learner",pg_learner
 
         if pg_resume is not None:
             net_handle = open(pg_resume, 'rb')
@@ -257,8 +268,9 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
     accums = init_accums(pg_learners[pa.batch_size])
 
+
     # --------------------------------------
-    print("Preparing for reference data...")
+    print"Preparing for reference data..."
     # --------------------------------------
 
     ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre=repre, end=end)
@@ -266,6 +278,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     max_rew_lr_curve = []
     slow_down_lr_curve = []
 
+    #print"I am a flag"
+    # --------------------------------------
     # --------------------------------------
     print("Start training...")
     # --------------------------------------
@@ -324,7 +338,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
                 # Do policy gradient update step, using the first agent
                 # put the new parameter in the last 'worker', then propagate the update at the end
-                grads = pg_learners[pa.batch_size].get_grad(all_ob, all_action, all_adv)
+                grads = pg_learners[pa.batch_size].get_grad(all_ob, all_action, all_adv)     ## calculate gradient
 
                 grads_all.append(grads)
 
@@ -350,7 +364,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         for i in xrange(pa.batch_size + 1):
             pg_learners[i].set_net_params(params)
 
-        timer_end = time.time()
+        timer_end = time.time()  ######## end
 
         print "-----------------"
         print "Iteration: \t %i" % iteration
@@ -387,6 +401,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                           ref_discount_rews, ref_slow_down)
 
 
+
 def main():
 
     import parameters
@@ -395,26 +410,27 @@ def main():
 
     pa.simu_len = 50  # 1000
     pa.num_ex = 50  # 100
-    pa.num_nw = 10
+    pa.num_nw = 5   # overwrite the queue length  in parameters.Parameters()
     pa.num_seq_per_batch = 20
     pa.output_freq = 50
     pa.batch_size = 10
 
     # pa.max_nw_size = 5
     # pa.job_len = 5
-    pa.new_job_rate = 0.3
+    pa.new_job_rate = 0.7   ## lambda in new job arrival Poisson Process
 
-    pa.episode_max_length = 2000  # 2000
+    pa.episode_max_length = 500  # 2000
 
     pa.compute_dependent_parameters()
 
     pg_resume = None
     # pg_resume = 'data/tmp_450.pkl'
 
-    render = False
+    render = True
 
     launch(pa, pg_resume, render, repre='image', end='all_done')
 
 
 if __name__ == '__main__':
     main()
+

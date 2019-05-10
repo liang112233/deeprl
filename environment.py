@@ -1,14 +1,15 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import theano
+#import theano
+import tensorflow as tf
 
 import parameters
 
 
 class Env:
     def __init__(self, pa, nw_len_seqs=None, nw_size_seqs=None,
-                 seed=42, render=False, repre='image', end='no_new_job'):
+                 seed=42, render=True, repre='image', end='no_new_job'):
 
         self.pa = pa
         self.render = render
@@ -33,9 +34,7 @@ class Env:
             self.workload = np.zeros(pa.num_res)
             for i in xrange(pa.num_res):
                 self.workload[i] = \
-                    np.sum(self.nw_size_seqs[:, i] * self.nw_len_seqs) / \
-                    float(pa.res_slot) / \
-                    float(len(self.nw_len_seqs))
+                    np.sum(self.nw_size_seqs[:, i] * self.nw_len_seqs) /float(pa.res_slot) /float(len(self.nw_len_seqs))
                 print("Load on # " + str(i) + " resource dimension is " + str(self.workload[i]))
             self.nw_len_seqs = np.reshape(self.nw_len_seqs,
                                            [self.pa.num_ex, self.pa.simu_len])
@@ -108,7 +107,7 @@ class Env:
             ir_pt += 1
 
             assert ir_pt == image_repr.shape[1]
-
+            #print "image_repr",image_repr
             return image_repr
 
         elif self.repre == 'compact':
@@ -116,7 +115,7 @@ class Env:
             compact_repr = np.zeros(self.pa.time_horizon * (self.pa.num_res + 1) +  # current work
                                     self.pa.num_nw * (self.pa.num_res + 1) +        # new work
                                     1,                                              # backlog indicator
-                                    dtype=theano.config.floatX)
+                                    dtype='float32')  # this is just one way to configure the datatype as some kind of float such as float 16, float 32 etc.
 
             cr_pt = 0
 
@@ -207,21 +206,24 @@ class Env:
         plt.imshow(extra_info, interpolation='nearest', vmax=1)
 
         plt.show()     # manual
-        # plt.pause(0.01)  # automatic
+        #plt.pause(0.01)  # automatic
 
     def get_reward(self):
 
+        alpha = 0.1
         reward = 0
         for j in self.machine.running_job:
-            reward += self.pa.delay_penalty / float(j.len)
-
+            reward += self.pa.delay_penalty / float(j.len)    # +np.sum(float(np.sum(j.res_vec))*alpha) is the resource utilization term ,alpha is the coefficient      self.pa.delay_penalty / float(j.len)
+            # print "resource allocated each time", j.res_vec
+            # print "numpy.sum",np.sum(float(np.sum(j.res_vec))*alpha)
         for j in self.job_slot.slot:
             if j is not None:
-                reward += self.pa.hold_penalty / float(j.len)
+                reward += self.pa.hold_penalty / float(j.len)    ## +
 
         for j in self.job_backlog.backlog:
             if j is not None:
-                reward += self.pa.dismiss_penalty / float(j.len)
+                reward += self.pa.dismiss_penalty / float(j.len)   ## +
+        print "reward", reward
 
         return reward
 
@@ -237,34 +239,42 @@ class Env:
             status = 'MoveOn'
         elif self.job_slot.slot[a] is None:  # implicit void action
             status = 'MoveOn'
+
         else:
             allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
+            print("flag0",allocated)
             if not allocated:  # implicit void action
                 status = 'MoveOn'
             else:
                 status = 'Allocate'
-
+            print "allocated", allocated
         if status == 'MoveOn':
             self.curr_time += 1
+            print("flag00",self.curr_time)
+
             self.machine.time_proceed(self.curr_time)
             self.extra_info.time_proceed()
 
             # add new jobs
             self.seq_idx += 1
+            print("end",self.end)
 
             if self.end == "no_new_job":  # end of new job sequence
                 if self.seq_idx >= self.pa.simu_len:
                     done = True
+                    print("done0",done)
             elif self.end == "all_done":  # everything has to be finished
                 if self.seq_idx >= self.pa.simu_len and \
                    len(self.machine.running_job) == 0 and \
                    all(s is None for s in self.job_slot.slot) and \
                    all(s is None for s in self.job_backlog.backlog):
                     done = True
+
                 elif self.curr_time > self.pa.episode_max_length:  # run too long, force termination
                     done = True
 
             if not done:
+                print("done4", done)
 
                 if self.seq_idx < self.pa.simu_len:  # otherwise, end of new job sequence, i.e. no new jobs
                     new_job = self.get_new_job_from_seq(self.seq_no, self.seq_idx)
@@ -295,6 +305,7 @@ class Env:
         elif status == 'Allocate':
             self.job_record.record[self.job_slot.slot[a].id] = self.job_slot.slot[a]
             self.job_slot.slot[a] = None
+            print("flag10 job allocated")
 
             # dequeue backlog
             if self.job_backlog.curr_size > 0:
@@ -304,6 +315,7 @@ class Env:
                 self.job_backlog.curr_size -= 1
 
         ob = self.observe()
+
 
         info = self.job_record
 
@@ -378,10 +390,15 @@ class Machine:
     def allocate_job(self, job, curr_time):
 
         allocated = False
+        print("flag1 from allocate_job")
 
         for t in xrange(0, self.time_horizon - job.len):
 
-            new_avbl_res = self.avbl_slot[t: t + job.len, :] - job.res_vec
+            new_avbl_res = self.avbl_slot[t: t + job.len, :] - job.res_vec   # job.res_vec is the resource taken by job, CPU and RAM, We could add them together or just use one as Allocation_j, Need to make sure job is  allocated, then to calculated utilization
+            # print "avbl_slot",self.avbl_slot[t: t + job.len, :]
+            # print "job.res_vec", job.res_vec
+            # print "new_avbl_res",new_avbl_res
+
 
             if np.all(new_avbl_res[:] >= 0):
 
@@ -390,7 +407,7 @@ class Machine:
                 self.avbl_slot[t: t + job.len, :] = new_avbl_res
                 job.start_time = curr_time + t
                 job.finish_time = job.start_time + job.len
-
+                #print "job", job.len
                 self.running_job.append(job)
 
                 # update graphical representation
@@ -444,13 +461,14 @@ class ExtraInfo:
     def time_proceed(self):
         if self.time_since_last_new_job < self.max_tracking_time_since_last_job:
             self.time_since_last_new_job += 1
+            print("self.time_since_last_new_job",self.time_since_last_new_job)
 
 
 # ==========================================================================
 # ------------------------------- Unit Tests -------------------------------
 # ==========================================================================
-
-
+#
+#
 def test_backlog():
     pa = parameters.Parameters()
     pa.num_nw = 5
@@ -548,3 +566,4 @@ if __name__ == '__main__':
     test_backlog()
     test_compact_speed()
     test_image_speed()
+    print("I am in the main of environment")

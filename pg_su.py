@@ -4,8 +4,8 @@ import time
 import sys
 import cPickle
 
-import environment
-import pg_network
+import environment_new
+import pg_network_new
 import other_agents
 import job_distribution
 
@@ -32,9 +32,9 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
-    env = environment.Env(pa, render=False, repre=repre, end=end)
+    env = environment_new.Env(pa, render=False, repre=repre, end=end)
 
-    pg_learner = pg_network.PGLearner(pa)
+    pg_learner = pg_network_new.PGLearner(pa)
 
     if pg_resume is not None:
         net_handle = open(pg_resume, 'r')
