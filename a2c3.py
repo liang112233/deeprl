@@ -16,7 +16,7 @@ import parameters
 # Superparameters, globle parameters
 OUTPUT_GRAPH = True  # If this is False, no graph in tensorboard
 RENDER = False  # rendering wastes time
-GAMMA = 0.9  # reward discount in TD error
+GAMMA = 0.99  # reward discount in TD error
 LR_A = 0.001  # learning rate for actor
 LR_C = 0.01  # learning rate for critic
 
@@ -91,7 +91,7 @@ class Agent(object):
         self.normalize_advantages = estimate_advantage_args['normalize_advantages']
 
     def init_tf_sess(self):
-        tf_config = tf.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)
+        tf_config = config = tf.ConfigProto(intra_op_parallelism_threads=0, inter_op_parallelism_threads=0, allow_soft_placement=True)
         tf_config.gpu_options.allow_growth = True  # may need if using GPU
         self.sess = tf.Session(config=tf_config)
         self.sess.__enter__()  # equivalent to `with self.sess:`
@@ -148,14 +148,7 @@ class Agent(object):
         sy_logits_na = build_mlp(input_placeholder=sy_ob_no, output_size=self.ac_dim, scope="policy_kw",
                                      n_layers=self.n_layers, size=self.size, activation=tf.nn.relu)
         return sy_logits_na
-        # else:
-        #     # YOUR_HW2 CODE_HERE
-        #     sy_mean = build_mlp(input_placeholder=sy_ob_no, output_size=self.ac_dim, scope="policy_kw",
-        #                         n_layers=self.n_layers, size=self.size, activation=tf.nn.relu)
-        #     # sy_mean = None
-        #     sy_logstd = tf.get_variable("logstd", shape=[self.ac_dim])
-        #     # sy_logstd = None
-        #     return (sy_mean, sy_logstd)
+
 
     def sample_action(self, policy_parameters):
         """ Constructs a symbolic operation for stochastically sampling from the policy
@@ -470,7 +463,7 @@ def train_AC(
         num_target_updates,
         num_grad_steps_per_target_update,
         animate,
-        logdir,
+        #logdir,
         normalize_advantages,
         seed,
         n_layers,
@@ -589,20 +582,15 @@ def train_AC(
         # logz.pickle_tf_vars()
         print("AverageReturn", np.mean(returns))
         print("EpLenMean", np.mean(ep_lengths))
-        with open(r"data/rewards15001.txt", "ab") as f:
-            np.savetxt(f, [np.mean(returns)], delimiter = ",")
-            #f.write('{:.2f}\n'.format(np.mean(returns)))
-            #f.write("\n")
-            f.close()
-
-
+        # with open(r"data/rewards15001.txt", "ab") as f:
+        #      np.savetxt(f, [np.mean(returns)], delimiter = ",")
+        #     #f.write('{:.2f}\n'.format(np.mean(returns)))
+        #     #f.write("\n")
+        #      f.close()
 
 
 def main():
-    pg_resume = None
-    render = True
-    repre = 'image'
-    end = 'all_done'
+
     import argparse
     parser = argparse.ArgumentParser()
     #parser.add_argument('env_name', type=str)
@@ -622,14 +610,14 @@ def main():
     parser.add_argument('--size', '-s', type=int, default=64)
     args = parser.parse_args()
 
-    data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
-
-    if not (os.path.exists(data_path)):
-        os.makedirs(data_path)
-    logdir = 'ac_' + args.exp_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
-    logdir = os.path.join(data_path, logdir)
-    if not (os.path.exists(logdir)):
-        os.makedirs(logdir)
+    # data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+    #
+    # if not (os.path.exists(data_path)):
+    #     os.makedirs(data_path)
+    # logdir = 'ac_' + args.exp_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+    # logdir = os.path.join(data_path, logdir)
+    # if not (os.path.exists(logdir)):
+    #     os.makedirs(logdir)
 
     max_path_length = pa.episode_max_length if pa.episode_max_length > 0 else None  # this is set in parameter
     print("episode_max_length",max_path_length)
@@ -652,7 +640,7 @@ def main():
                 num_target_updates=args.num_target_updates,
                 num_grad_steps_per_target_update=args.num_grad_steps_per_target_update,
                 animate=args.render,
-                logdir=os.path.join(logdir, '%d' % seed),
+                #logdir=os.path.join(logdir, '%d' % seed),
                 normalize_advantages=not (args.dont_normalize_advantages),
                 seed=seed,
                 n_layers=args.n_layers,
