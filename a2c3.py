@@ -91,7 +91,7 @@ class Agent(object):
         self.normalize_advantages = estimate_advantage_args['normalize_advantages']
 
     def init_tf_sess(self):
-        tf_config = config = tf.ConfigProto(intra_op_parallelism_threads=0, inter_op_parallelism_threads=0, allow_soft_placement=True)
+        tf_config = tf.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)
         tf_config.gpu_options.allow_growth = True  # may need if using GPU
         self.sess = tf.Session(config=tf_config)
         self.sess.__enter__()  # equivalent to `with self.sess:`
@@ -148,7 +148,14 @@ class Agent(object):
         sy_logits_na = build_mlp(input_placeholder=sy_ob_no, output_size=self.ac_dim, scope="policy_kw",
                                      n_layers=self.n_layers, size=self.size, activation=tf.nn.relu)
         return sy_logits_na
-
+        # else:
+        #     # YOUR_HW2 CODE_HERE
+        #     sy_mean = build_mlp(input_placeholder=sy_ob_no, output_size=self.ac_dim, scope="policy_kw",
+        #                         n_layers=self.n_layers, size=self.size, activation=tf.nn.relu)
+        #     # sy_mean = None
+        #     sy_logstd = tf.get_variable("logstd", shape=[self.ac_dim])
+        #     # sy_logstd = None
+        #     return (sy_mean, sy_logstd)
 
     def sample_action(self, policy_parameters):
         """ Constructs a symbolic operation for stochastically sampling from the policy
@@ -480,7 +487,7 @@ def train_AC(
     # ========================================================================================#
 
     # Make the gym environment
-    render = False
+    render = True
     repre = 'image'
     end = 'all_done'
     env = environment.Env(pa, render=render, repre=repre, end=end)

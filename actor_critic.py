@@ -433,8 +433,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
             #cPickle.dump(pg_learner.get_params(), param_file, -1)
             # param_file.close()
 
-            # slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
-            #                      render=False, plot=True, repre=repre, end=end)
+            slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
+                                  render=False, plot=True, repre=repre, end=end)
 
             plot_lr_curve(pa.output_filename,
                           max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,

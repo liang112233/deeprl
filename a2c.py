@@ -12,6 +12,8 @@ import parameters
 import slow_down_cdf
 import matplotlib.pyplot as plt
 
+# turn off tensoflow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 #tf.enable_eager_execution()
 
 # Superparameters, globle parameters
@@ -28,14 +30,28 @@ output_dim = pa.network_output_dim
 # Utilities
 # ============================================================================================#
 
-def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=tf.tanh, output_activation=None):
+def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=tf.nn.relu, output_activation=None):
     # raise NotImplementedError
     with tf.variable_scope(scope):
         inph = input_placeholder
-    for ii in range(n_layers):
-        inph = tf.layers.dense(inph, size, activation=activation)
-        # inph = tf.layers.dense(inputs = inph,units=size,activation = activation,bias_constraint=None)
-    output_placeholder = tf.layers.dense(inph, output_size, activation=output_activation)
+        # inph = tf.reshape(inph,[None, 4260])
+        # inph = tf.layers.Flatten()(inph)
+        inph=tf.expand_dims(inph,axis=3) ### axis could be 1
+
+
+
+        conv1 = tf.layers.conv2d(inputs=inph, filters=16, kernel_size=[2, 2], strides=[1, 1], padding='SAME', activation=tf.nn.relu)
+        # pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+        conv2 = tf.layers.conv2d(inputs=conv1, filters=32, kernel_size=[2, 2], strides=[1, 1], padding='SAME',
+                                 activation=tf.nn.relu)
+        # pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
+        inph = tf.layers.Flatten()(conv2)
+        output_placeholder = tf.layers.dense(inph, output_size, activation=output_activation)
+    # for ii in range(n_layers):
+    #     # inph = tf.layers.dense(inph, size, activation=activation)
+    #     inph = tf.layers.dense(inph, 600, activation=activation)
+    #     # inph = tf.layers.dense(inputs = inph,units=size,activation = activation,bias_constraint=None)
+    # output_placeholder = tf.layers.dense(inph, output_size, activation=output_activation)
     return output_placeholder
 
 def pathlength(path):
@@ -86,7 +102,7 @@ class Agent(object):
         """
 
         # raise NotImplementedError
-        sy_ob_no = tf.placeholder(shape=[None,input_height, input_width], name="ob", dtype=tf.float32)
+        sy_ob_no = tf.placeholder(shape=[None, input_height, input_width], name="ob", dtype=tf.float32)
         # if self.discrete:
         sy_ac_na = tf.placeholder(shape=[None], name="ac", dtype=tf.int32)
         # else:
@@ -124,18 +140,18 @@ class Agent(object):
                                      n_layers=self.n_layers, size=self.size, activation=tf.nn.relu)
         return sy_logits_na
 
-    def sample_action(self, policy_parameters):
+    def sample_action(self, policy_parameters): # policy_params=(None, 6)
         sy_logits_na = policy_parameters
 
-        sy_sampled_ac = tf.multinomial(sy_logits_na[0], 1)
+        sy_sampled_ac = tf.multinomial(sy_logits_na, 1)
         sy_sampled_ac = tf.squeeze(sy_sampled_ac, axis=1)
         #print("sy_sampled_ac",tf.Session.run(sy_sampled_ac,{policy_parameters,policy_parameters}))
         return sy_sampled_ac
 
-    def get_log_prob(self, policy_parameters, sy_ac_na):
+    def get_log_prob(self, policy_parameters, sy_ac_na): # policy_params=(None, 6)
         sy_logits_na = policy_parameters
         # YOUR_HW2 CODE_HERE
-        sy_logprob_n = -tf.nn.sparse_softmax_cross_entropy_with_logits(labels=sy_ac_na, logits=sy_logits_na[:,0,:])# change tensor shape from (1001,30,6) to (1001,6)
+        sy_logprob_n = -tf.nn.sparse_softmax_cross_entropy_with_logits(labels=sy_ac_na, logits=sy_logits_na)
         return sy_logprob_n
 
     def build_computation_graph(self):
@@ -162,7 +178,7 @@ class Agent(object):
         self.sy_ob_no, self.sy_ac_na, self.sy_adv_n = self.define_placeholders()
 
         # The policy takes in an observation and produces a distribution over the action space
-        self.policy_parameters = self.policy_forward_pass(self.sy_ob_no)
+        self.policy_parameters = self.policy_forward_pass(self.sy_ob_no) # policy_params=(None,6)
 
         # We can sample actions from this action distribution.
         # This will be called in Agent.sample_trajectory() where we generate a rollout.
@@ -172,8 +188,8 @@ class Agent(object):
         # This is used in the loss function.
         self.sy_logprob_n = self.get_log_prob(self.policy_parameters, self.sy_ac_na)
 
-        actor_loss = tf.reduce_sum(-self.sy_logprob_n * self.sy_adv_n)
-        self.actor_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(actor_loss)
+        self.actor_loss = tf.reduce_sum(-self.sy_logprob_n * self.sy_adv_n)
+        self.actor_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(self.actor_loss)
 
         # define the critic
         self.critic_prediction = ((build_mlp(
@@ -181,10 +197,10 @@ class Agent(object):
             1,
             "nn_critic",
             n_layers=self.n_layers,
-            size=self.size))[:,0])   #tf.squeeze
+            size=self.size)))   #tf.squeeze
         self.sy_target_n = tf.placeholder(shape=[None], name="critic_target", dtype=tf.float32)
         self.critic_loss = tf.losses.mean_squared_error(self.sy_target_n, tf.squeeze(self.critic_prediction))#[:,0]
-        self.critic_update_op = tf.train.AdamOptimizer(0.01).minimize(self.critic_loss)
+        self.critic_update_op = tf.train.AdamOptimizer(0.001).minimize(self.critic_loss)
 
     def sample_trajectories(self, itr, env):
         # Collect paths until we have enough timesteps
@@ -202,7 +218,7 @@ class Agent(object):
     def sample_trajectory(self, env, animate_this_episode):
         env.reset()
         ob = env.observe()
-        print("ob 1 sum",np.sum(ob))
+        #print("ob 1 sum",np.sum(ob))
         obs, acs, rewards, next_obs, terminals = [], [], [], [], []
         steps = 0
         while True:
@@ -212,26 +228,27 @@ class Agent(object):
             obs.append(ob)
             # raise NotImplementedError
             # print("ob[None].shape",ob[None].shape)
+            # input_obs=tf.expand_dims(ob)
+            # print("input_obs",input_obs.shape)
+
             ac = self.sess.run(self.sy_sampled_ac, feed_dict={self.sy_ob_no: ob[None]})  # YOUR HW2 CODE HERE
             ac = ac[0]
-            if ac == 6:
-                ac = ac-6
+            # if ac == 6:
+            #     ac = ac-6
 
             acs.append(ac)
             ob, rew, done, info = env.step(ac,repeat=True)
-            print("action",ac)
+            #print("action",ac)
             #print("ob2 sum",np.sum(ob))
             next_obs.append(ob)
-            # add the observation after taking a step to next_obs
-            # YOUR CODE HERE
-            # raise NotImplementedError
+
             rewards.append(rew)
             steps += 1
-            print("steps",steps)
+            #print("steps",steps)
             # If the episode ended, the corresponding terminal value is 1
             # otherwise, it is 0
             # YOUR CODE HERE
-            print("max_path_length",self.max_path_length)
+            #print("max_path_length",self.max_path_length)
             if done or steps > self.max_path_length:
                 terminals.append(1)
                 break
@@ -272,7 +289,7 @@ class Agent(object):
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
         sum_of_path_lengths = ob_no.shape[0]
-        print("sum_of_path_lengths",sum_of_path_lengths)
+        #print("sum_of_path_lengths",sum_of_path_lengths)
         adv_n = []
         for ii in range(sum_of_path_lengths):
             if terminal_n[ii] == 0:
@@ -355,6 +372,9 @@ class Agent(object):
         self.sess.run(self.actor_update_op,
                       feed_dict={self.sy_ob_no: ob_no, self.sy_ac_na: ac_na, self.sy_adv_n: adv_n})
 
+        actor_loss = self.sess.run(self.actor_loss,
+                 feed_dict={self.sy_ob_no: ob_no, self.sy_ac_na: ac_na, self.sy_adv_n: adv_n})
+        return actor_loss
 
 def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
                   ref_discount_rews, ref_slow_down):
@@ -366,27 +386,27 @@ def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_
     ax = fig.add_subplot(121)
     ax.set_color_cycle([cm(1. * i / num_colors) for i in range(num_colors)])
 
-    ax.plot(mean_rew_lr_curve, linewidth=2, label='PG mean')
+    ax.plot(mean_rew_lr_curve, linewidth=1.5, label='A2C mean')
     for k in ref_discount_rews:
-        ax.plot(np.tile(np.average(ref_discount_rews[k]), len(mean_rew_lr_curve)), linewidth=2, label=k)
-    ax.plot(max_rew_lr_curve, linewidth=2, label='PG max')
+        ax.plot(np.tile(np.average(ref_discount_rews[k]), len(mean_rew_lr_curve)), linewidth=1.5, label=k)
+    ax.plot(max_rew_lr_curve, linewidth=1.5, label='A2C max')
 
     plt.legend(loc=4)
-    plt.xlabel("Iteration", fontsize=20)
-    plt.ylabel("Discounted Total Reward", fontsize=20)
+    plt.xlabel("Epoch", fontsize=16)
+    plt.ylabel("Discounted Reward", fontsize=16)
 
     ax = fig.add_subplot(122)
     ax.set_color_cycle([cm(1. * i / num_colors) for i in range(num_colors)])
 
-    ax.plot(slow_down_lr_curve, linewidth=2, label='PG mean')
-    print("slow_down_lr_curve",slow_down_lr_curve)
+    ax.plot(slow_down_lr_curve, linewidth=1.5, label='A2C mean')
+    #print("slow_down_lr_curve",slow_down_lr_curve)
     for k in ref_discount_rews:
-        ax.plot(np.tile(np.average(np.concatenate(ref_slow_down[k])), len(slow_down_lr_curve)), linewidth=2, label=k)
+        ax.plot(np.tile(np.average(np.concatenate(ref_slow_down[k])), len(slow_down_lr_curve)), linewidth=1.5, label=k)
 
 
     plt.legend(loc=1)
-    plt.xlabel("Iteration", fontsize=20)
-    plt.ylabel("Slowdown", fontsize=20)
+    plt.xlabel("Epoch", fontsize=16)
+    plt.ylabel("Slowdown", fontsize=16)
 
     plt.savefig(output_file_prefix + "_lr_curve" + ".pdf")
 
@@ -446,6 +466,20 @@ def concatenate_all_ob_across_examples(all_ob, pa):
 
     return all_ob_contact
 
+def discount(x, gamma):
+    """
+    Given vector x, computes a vector y such that
+    y[i] = x[i] + gamma * x[i+1] + gamma^2 x[i+2] + ...
+    """
+    out = np.zeros(len(x))
+    out[-1] = x[-1]
+    for i in reversed(xrange(len(x)-1)):
+        out[i] = x[i] + gamma*out[i+1]
+    assert x.ndim >= 1
+    # More efficient version:
+    # scipy.signal.lfilter([1],[1,-gamma],x[::-1], axis=0)[::-1]
+    return out
+
 
 
 def train_AC(
@@ -471,7 +505,7 @@ def train_AC(
     # ========================================================================================#
 
     # Make the gym environment
-    render = False
+    render = True
     repre = 'image'
     end = 'all_done'
     env = environment.Env(pa, render=render, repre=repre, end=end)
@@ -484,7 +518,7 @@ def train_AC(
     #env.seed(seed)
     # Maximum length for episodes
     max_path_length = max_path_length
-    print("max_path_length",max_path_length)
+    #print("max_path_length",max_path_length)
 
     #discrete = isinstance(env.action_space, gym.spaces.Discrete)
 
@@ -527,9 +561,25 @@ def train_AC(
     # ========================================================================================#
     # Training Loop
     # ========================================================================================#
+    ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre='image',
+                                                            end='no_new_job')
+
+    mean_rew_lr_curve = []
+    max_rew_lr_curve = []
+    slow_down_lr_curve = []
+
+
 
     total_timesteps = 0
     for itr in range(n_iter):
+        ###### for plotting
+        all_ob = []
+        all_action = []
+        all_eprews = []
+        all_eplens = []
+        all_slowdown = []
+        ###### for plotting
+
         print("********** Iteration %i ************" % itr)
         paths, timesteps_this_batch = agent.sample_trajectories(itr, env)
         total_timesteps += timesteps_this_batch
@@ -546,38 +596,48 @@ def train_AC(
         # print("adv shape line 560 ",(np.squeeze(adv)).shape)
         # print("ob_no shape",ob_no.shape)
         # print("ac_na shape",ac_na.shape)
-        agent.update_actor(ob_no, ac_na, np.squeeze(adv))
+        actor_loss = agent.update_actor(ob_no, ac_na, np.squeeze(adv))
 
-
-
-        # Call tensorflow operations to:
-        # (1) update the critic, by calling agent.update_critic
-        # (2) use the updated critic to compute the advantage by, calling agent.estimate_advantage
-        # (3) use the estimated advantage values to update the actor, by calling agent.update_actor
+        print("actor_loss",actor_loss)
 
         # Log diagnostics
         returns = [path["reward"].sum() for path in paths]
         ep_lengths = [pathlength(path) for path in paths]
-        # logz.log_tabular("Time", time.time() - start)
-        # logz.log_tabular("Iteration", itr)
-        # logz.log_tabular("AverageReturn", np.mean(returns))
-        # logz.log_tabular("StdReturn", np.std(returns))
-        # logz.log_tabular("MaxReturn", np.max(returns))
-        # logz.log_tabular("MinReturn", np.min(returns))
-        # logz.log_tabular("EpLenMean", np.mean(ep_lengths))
-        # logz.log_tabular("EpLenStd", np.std(ep_lengths))
-        # logz.log_tabular("TimestepsThisBatch", timesteps_this_batch)
-        # logz.log_tabular("TimestepsSoFar", total_timesteps)
-        # logz.dump_tabular()
-        # logz.pickle_tf_vars()
+
         print("AverageReturn", np.mean(returns))
-        print("EpLenMean", np.mean(ep_lengths))
-        fig = plt.figure(figsize=(12, 5))
-        ax = fig.add_subplot(121)
-        ax.plot(returns, linewidth=2, label='PG mean')
-        plt.legend(loc=4)
-        plt.xlabel("Iteration", fontsize=20)
-        plt.ylabel("Discounted Total Reward", fontsize=20)
+        #print("EpLenMean", np.mean(ep_lengths))
+
+        enter_time, finish_time, job_len = process_all_info(paths)
+        finished_idx = (finish_time >= 0)
+        all_slowdown.append((finish_time[finished_idx] - enter_time[finished_idx]) / job_len[finished_idx])
+
+        ###### for plotting
+
+        all_ob = ob_no
+        all_action = ac_na
+
+        all_eprews.append(
+            np.array([discount(path["reward"], pa.discount)[0] for path in paths]))  # episode total rewards
+        all_eplens.append(np.array([len(path["reward"]) for path in paths]))  # episode lengths
+
+        eprews = np.concatenate(all_eprews)  # episode total rewards
+        eplens = np.concatenate(all_eplens)  # episode lengths
+        all_slowdown = np.concatenate(all_slowdown)
+        max_rew_lr_curve.append(np.average([np.max(rew) for rew in all_eprews]))
+        mean_rew_lr_curve.append(eprews.mean())
+        slow_down_lr_curve.append(np.mean(all_slowdown))
+
+        if itr % pa.output_freq == 0:
+            plot_lr_curve(pa.output_filename,
+                          max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
+                          ref_discount_rews, ref_slow_down)
+
+        with open(r"data/loss.txt", "ab") as f:
+            #      np.savetxt(f, [np.mean(returns)], delimiter = ",")
+              f.write('{:.2f}\n'.format(actor_loss))
+            #     #f.write("\n")
+              f.close()
+        ###### for plotting
 
 
 def main():
@@ -587,17 +647,17 @@ def main():
     parser.add_argument('--exp_name', type=str, default='vac')
     parser.add_argument('--render', action='store_true')
     parser.add_argument('--discount', type=float, default=0.99)
-    parser.add_argument('--n_iter', '-n', type=int, default=1000)
+    parser.add_argument('--n_iter', '-n', type=int, default=2000)
     parser.add_argument('--batch_size', '-b', type=int, default=1000)
-    parser.add_argument('--ep_len', '-ep', type=float, default=300)
-    parser.add_argument('--learning_rate', '-lr', type=float, default=5e-3)
+    parser.add_argument('--ep_len', '-ep', type=float, default=500)
+    parser.add_argument('--learning_rate', '-lr', type=float, default=0.0001)
     parser.add_argument('--dont_normalize_advantages', '-dna', action='store_true')
     parser.add_argument('--num_target_updates', '-ntu', type=int, default=10)
     parser.add_argument('--num_grad_steps_per_target_update', '-ngsptu', type=int, default=10)
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--n_experiments', '-e', type=int, default=1)
     parser.add_argument('--n_layers', '-l', type=int, default=2)
-    parser.add_argument('--size', '-s', type=int, default=64)
+    parser.add_argument('--size', '-s', type=int, default=4260)
     args = parser.parse_args()
 
     data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
@@ -610,7 +670,7 @@ def main():
         os.makedirs(logdir)
 
     max_path_length = pa.episode_max_length if pa.episode_max_length > 0 else None  # this is set in parameter
-    print("episode_max_length",max_path_length)
+    #print("episode_max_length",max_path_length)
     processes = []
     # this is from parameters.py
     pa.compute_dependent_parameters()

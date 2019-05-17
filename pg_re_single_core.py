@@ -299,6 +299,11 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                           max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
                           ref_discount_rews, ref_slow_down)
 
+        with open(r"data/loss_single.txt", "ab") as f:
+            #      np.savetxt(f, [np.mean(returns)], delimiter = ",")
+              f.write('{:.2f}\n'.format(loss))
+            #     #f.write("\n")
+              f.close()
 
 
 
@@ -318,7 +323,7 @@ def main():
     # pa.job_len = 5
     pa.new_job_rate = 0.7
 
-    pa.episode_max_length = 100  # 2000
+    pa.episode_max_length = 500  # 2000
 
     pa.compute_dependent_parameters()
 

@@ -1,7 +1,6 @@
 """
 Using:
 tensorflow 1.0
-Sisheng Liang  2019
 """
 
 import numpy as np

@@ -59,7 +59,7 @@ class Dist:
         return nw_len, nw_size
 
 
-def generate_sequence_work(pa, seed=42):
+def generate_sequence_work(pa, seed=1234):  #42
 
     np.random.seed(seed)
 

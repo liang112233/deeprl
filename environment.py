@@ -223,7 +223,7 @@ class Env:
         for j in self.job_backlog.backlog:
             if j is not None:
                 reward += self.pa.dismiss_penalty / float(j.len)   ## +
-        print "reward", reward
+        #print "reward", reward
 
         return reward
 
@@ -242,27 +242,27 @@ class Env:
 
         else:
             allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
-            print("flag0",allocated)
+            #print("flag0",allocated)
             if not allocated:  # implicit void action
                 status = 'MoveOn'
             else:
                 status = 'Allocate'
-            print "allocated", allocated
+            #print "allocated", allocated
         if status == 'MoveOn':
             self.curr_time += 1
-            print("flag00",self.curr_time)
+            #print("flag00",self.curr_time)
 
             self.machine.time_proceed(self.curr_time)
             self.extra_info.time_proceed()
 
             # add new jobs
             self.seq_idx += 1
-            print("end",self.end)
+            #print("end",self.end)
 
             if self.end == "no_new_job":  # end of new job sequence
                 if self.seq_idx >= self.pa.simu_len:
                     done = True
-                    print("done0",done)
+                    #print("done0",done)
             elif self.end == "all_done":  # everything has to be finished
                 if self.seq_idx >= self.pa.simu_len and \
                    len(self.machine.running_job) == 0 and \
@@ -274,7 +274,7 @@ class Env:
                     done = True
 
             if not done:
-                print("done4", done)
+                #print("done4", done)
 
                 if self.seq_idx < self.pa.simu_len:  # otherwise, end of new job sequence, i.e. no new jobs
                     new_job = self.get_new_job_from_seq(self.seq_no, self.seq_idx)
@@ -305,7 +305,7 @@ class Env:
         elif status == 'Allocate':
             self.job_record.record[self.job_slot.slot[a].id] = self.job_slot.slot[a]
             self.job_slot.slot[a] = None
-            print("flag10 job allocated")
+            #print("flag10 job allocated")
 
             # dequeue backlog
             if self.job_backlog.curr_size > 0:
@@ -390,7 +390,7 @@ class Machine:
     def allocate_job(self, job, curr_time):
 
         allocated = False
-        print("flag1 from allocate_job")
+        #print("flag1 from allocate_job")
 
         for t in xrange(0, self.time_horizon - job.len):
 
@@ -461,7 +461,7 @@ class ExtraInfo:
     def time_proceed(self):
         if self.time_since_last_new_job < self.max_tracking_time_since_last_job:
             self.time_since_last_new_job += 1
-            print("self.time_since_last_new_job",self.time_since_last_new_job)
+            #print("self.time_since_last_new_job",self.time_since_last_new_job)
 
 
 # ==========================================================================
@@ -566,4 +566,4 @@ if __name__ == '__main__':
     test_backlog()
     test_compact_speed()
     test_image_speed()
-    print("I am in the main of environment")
+
