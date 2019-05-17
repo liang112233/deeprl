@@ -505,7 +505,7 @@ def train_AC(
     # ========================================================================================#
 
     # Make the gym environment
-    render = True
+    render = False
     repre = 'image'
     end = 'all_done'
     env = environment.Env(pa, render=render, repre=repre, end=end)

@@ -2,26 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="80a65935-5732-4b48-af4a-1dbda3515025" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/a2c_backup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/a2c_pooling.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/a2c_poolingbkup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/a2cbk5-17.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pg_networkcopy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deeprm.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deeprm.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/a2c.py" beforeDir="false" afterPath="$PROJECT_DIR$/a2c.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/a2c2.py" beforeDir="false" afterPath="$PROJECT_DIR$/a2c2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/a2c3.py" beforeDir="false" afterPath="$PROJECT_DIR$/a2c3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/actor_critic.py" beforeDir="false" afterPath="$PROJECT_DIR$/actor_critic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/actor_critic_backup.py" beforeDir="false" afterPath="$PROJECT_DIR$/actor_critic_backup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/actor_critic_single_step.py" beforeDir="false" afterPath="$PROJECT_DIR$/actor_critic_single_step.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/tmp_lr_curve.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/data/tmp_lr_curve.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment.py" beforeDir="false" afterPath="$PROJECT_DIR$/environment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/job_distribution.py" beforeDir="false" afterPath="$PROJECT_DIR$/job_distribution.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pg_network.py" beforeDir="false" afterPath="$PROJECT_DIR$/pg_network.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pg_re_single_core.py" beforeDir="false" afterPath="$PROJECT_DIR$/pg_re_single_core.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/policy_gradient.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/loss.txt" beforeDir="false" afterPath="$PROJECT_DIR$/data/loss.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/return_pool.txt" beforeDir="false" afterPath="$PROJECT_DIR$/data/return_pool.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -69,23 +52,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/parameters.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="169">
-              <caret line="17" column="13" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/a2c.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="40" lean-forward="true" selection-start-line="40" selection-end-line="40" />
+            <state relative-caret-position="181">
+              <caret line="509" column="20" lean-forward="true" selection-start-line="509" selection-start-column="20" selection-end-line="509" selection-end-column="20" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -114,11 +85,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/a2cbk5-17.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="424">
-              <caret line="59" lean-forward="true" selection-start-line="59" selection-end-line="59" />
+            <state relative-caret-position="288">
+              <caret line="74" column="52" selection-start-line="74" selection-start-column="52" selection-end-line="74" selection-end-column="52" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/environment.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="151">
+              <caret line="551" column="24" selection-start-line="551" selection-start-column="18" selection-end-line="551" selection-end-column="24" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -191,9 +174,9 @@
       <find>num_seq_per_batch</find>
       <find>slowdown</find>
       <find>axis</find>
-      <find>render</find>
       <find>run</find>
       <find>seed</find>
+      <find>render</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -223,12 +206,12 @@
         <option value="$PROJECT_DIR$/pg_network.py" />
         <option value="$PROJECT_DIR$/a2c_poolingbkup.py" />
         <option value="$PROJECT_DIR$/a2c_pooling.py" />
-        <option value="$PROJECT_DIR$/a2c.py" />
         <option value="$PROJECT_DIR$/a2cbk5-17.py" />
+        <option value="$PROJECT_DIR$/a2c.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="357" />
     <option name="y" value="296" />
     <option name="width" value="1356" />
@@ -439,15 +422,15 @@
       <workItem from="1557615380572" duration="66652000" />
       <workItem from="1558020121613" duration="901000" />
       <workItem from="1558021051748" duration="520000" />
-      <workItem from="1558021581595" duration="27493000" />
+      <workItem from="1558021581595" duration="28112000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="824760000" />
+    <option name="totallyTimeSpent" value="825379000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="67" y="25" width="1853" height="1055" extended-state="7" />
+    <frame x="67" y="25" width="1853" height="1055" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.4992764" visible="true" weight="0.15107913" />
@@ -862,16 +845,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/environment.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1683">
-          <caret line="332" column="37" selection-start-line="332" selection-start-column="37" selection-end-line="332" selection-end-column="37" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/a2c_poolingBackup.py" />
     <entry file="file://$PROJECT_DIR$/pg_network.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -975,16 +948,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/a2c.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="40" lean-forward="true" selection-start-line="40" selection-end-line="40" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/job_distribution.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="196">
@@ -994,8 +957,28 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/a2cbk5-17.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="424">
-          <caret line="59" lean-forward="true" selection-start-line="59" selection-end-line="59" />
+        <state relative-caret-position="288">
+          <caret line="74" column="52" selection-start-line="74" selection-start-column="52" selection-end-line="74" selection-end-column="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/environment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="151">
+          <caret line="551" column="24" selection-start-line="551" selection-start-column="18" selection-end-line="551" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/a2c.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="181">
+          <caret line="509" column="20" lean-forward="true" selection-start-line="509" selection-start-column="20" selection-end-line="509" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
